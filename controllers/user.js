@@ -1,38 +1,72 @@
 
+const bcryptjs = require('bcryptjs');
+const User = require('../models/user');
 
-const getUsers = (req, res) => {
+
+const getUsers = async (req, res) => {
     
-    const { q, nombre = 'no name', apikey, page='1', limit } = req.query;
+    const { limit = 5, from = 0 } = req.query;
+    const query = { status: true };
+
+    const [ total, users ] = await Promise.all([
+        User.countDocuments(query),
+        User.find(query)
+            .limit(limit)
+            .skip(from)
+    ]);
 
     res.json({
-        msg: 'getUsers API',
-        q,
-        nombre,
-        apikey,
-        page,
-        limit
+        total,
+        users
     });
 };
 
-const putUsers = (req, res) => {
+const putUsers = async (req, res) => {
     
     const { id } = req.params;
+    const { password, google, email, ...body } = req.body;
 
-    res.json({
-        msg: 'putUsers API',
-        id
-    });
+    //ToDo: Validar contra BD
+    if(password){
+        //Encriptar password
+        const salt = bcryptjs.genSaltSync();
+        body.password = bcryptjs.hashSync(password, salt);
+    }
+
+    const userUpdated = await User.findByIdAndUpdate( id, body, { new: true } );
+    res.json( userUpdated );
 };
 
-const postUsers = (req, res) => {
+const postUsers = async (req, res) => {
 
-    const { nombre, edad } = req.body;
+    try {
+        const { name, email, password, role } = req.body;
+        const user = new User({ name, email, password, role });
+    
+        //Encriptar password
+        const salt = bcryptjs.genSaltSync();
+        user.password = bcryptjs.hashSync(password, salt);
+    
+        //Guardar en BD
+        await user.save();
+    
+        res.json({
+            msg: 'postUsers API',
+            user
+        });        
+    } catch (error) {
+        //Valido error key duplicate del email
+        //TODO: se puede mejorar
+        if(error.code == 11000){
+            res.status(400).json({msg:`El correo ${req.body.email} ya esta registrado.`})
+        }
+            // const uniqueEmailError = isUniqueEmailError(error);
+            // if (uniqueEmailError) {
+            // return res.status(BAD_REQUEST_CODE).json(uniqueEmailError);
+            // }
+            // return res.status(SERVER_ERROR_CODE).json({ error });
+    }
 
-    res.json({
-        msg: 'postUsers API',
-        nombre,
-        edad,
-    });
 };
 
 const patchUsers = (req, res) => {
@@ -42,10 +76,16 @@ const patchUsers = (req, res) => {
     });
 };
 
-const deleteUsers = (req, res) => {
-    
+const deleteUsers = async (req, res) => {
+
+    const { id } = req.params;
+
+    //Delete fisico
+    // const user = await User.findByIdAndDelete(id);
+    const user = await User.findByIdAndUpdate( id, { status: false } );
+
     res.json({
-        msg: 'deleteUsers API'
+        msg:`El usuario con ID ${id} ha sido eliminado.`
     });
 };
 
