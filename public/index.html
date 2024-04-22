@@ -3,9 +3,69 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Acceso Denegado</title>
+    <title>Google Sign-in</title>
   </head>
   <body>
-    <h1>Acceso Denegado</h1>
+    <h1>Google Sign-in</h1><hr>
+
+    <div id="g_id_onload"
+        data-client_id="986159298146-1l5n84cdj2lb54g47cvelpcqb7d6hu6v.apps.googleusercontent.com"
+        data-callback="handleCredentialResponse"
+        data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="outline"
+        data-text="sign_in_with"
+        data-shape="rectangular"
+        data-logo_alignment="left">
+    </div>
+
+    <button id="google_signout" onclick="cerrarSesion()">Sign out</button>
+
+    <script src="https://accounts.google.com/gsi/client" async></script>
+    <script>
+      function handleCredentialResponse(response) {
+
+        const body = { id_token: response.credential };
+        //  console.log(response.credential);
+        fetch('http://localhost:8080/api/auth/google', {
+          method: 'POST',
+          headers: {
+            'Content-Type':'application/json'
+          },
+          body: JSON.stringify(body)
+        })
+          .then( resp => resp.json())
+          .then( resp => {
+            console.log(resp)
+            localStorage.setItem('email', resp.user.email)
+            location.reload();
+          })
+          .catch(console.warn);
+  
+      }
+
+      function cerrarSesion(){
+        google.accounts.id.disableAutoSelect();
+      
+        google.accounts.id.revoke(localStorage.getItem('email'), done =>{
+        localStorage.clear();
+        location.reload();
+      })
+      // const button_signout = document.getElementById('google_signout');
+      // button_signout.onclick = () => {
+      //   console.log(google.accounts.id)
+      //   google.accounts.id.disableAutoSelect()
+      //   google.accounts.id.revoke(localStorage.getItem('email'), done => {
+      //     localStorage.clear();
+      //     location.reload();
+      //   })
+
+      }
+
+    </script>
+
   </body>
 </html>
