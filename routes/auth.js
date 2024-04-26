@@ -1,7 +1,7 @@
 
 const { Router } = require('express');
 const { check, query } = require('express-validator');
-const { fieldsValidation } = require('../middlewares/fields_validation');
+const { fieldsValidation } = require('../middlewares');
 
 const { login, googleSignIn } = require('../controllers/auth');
 

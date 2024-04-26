@@ -2,7 +2,6 @@
 const bcryptjs = require('bcryptjs');
 const User = require('../models/user');
 
-
 const getUsers = async (req, res) => {
     
     const { limit = 5, from = 0 } = req.query;
@@ -21,12 +20,21 @@ const getUsers = async (req, res) => {
     });
 };
 
-const putUsers = async (req, res) => {
+const getUser = async (req, res) => {
+    
+    const { id } = req.params;
+    const user = await User.findById(id);
+
+    res.json({
+        user
+    });
+};
+
+const updateUser = async (req, res) => {
     
     const { id } = req.params;
     const { password, google, email, ...body } = req.body;
 
-    //ToDo: Validar contra BD
     if(password){
         //Encriptar password
         const salt = bcryptjs.genSaltSync();
@@ -37,7 +45,7 @@ const putUsers = async (req, res) => {
     res.json( userUpdated );
 };
 
-const postUsers = async (req, res) => {
+const createUser = async (req, res) => {
 
     try {
         const { name, email, password, role } = req.body;
@@ -50,33 +58,18 @@ const postUsers = async (req, res) => {
         //Guardar en BD
         await user.save();
     
-        res.json({
-            msg: 'postUsers API',
+        res.status(201).json({
+            msg: 'Usuario creado exitosamente',
             user
         });        
     } catch (error) {
-        //Valido error key duplicate del email
-        //TODO: se puede mejorar
-        if(error.code == 11000){
-            res.status(400).json({msg:`El correo ${req.body.email} ya esta registrado.`})
-        }
-            // const uniqueEmailError = isUniqueEmailError(error);
-            // if (uniqueEmailError) {
-            // return res.status(BAD_REQUEST_CODE).json(uniqueEmailError);
-            // }
-            // return res.status(SERVER_ERROR_CODE).json({ error });
+        console.log("Error createUser: ", error);
+        res.status(500).json({msg:`Ups!, hubo un error al tratar de crear al usuario.`});
     }
 
 };
 
-const patchUsers = (req, res) => {
-    
-    res.json({
-        msg: 'patchUsers API'
-    });
-};
-
-const deleteUsers = async (req, res) => {
+const deleteUser = async (req, res) => {
 
     const { id } = req.params;
     const user = await User.findByIdAndUpdate( id, { status: false } );
@@ -88,8 +81,8 @@ const deleteUsers = async (req, res) => {
 
 module.exports = {
     getUsers,
-    putUsers,
-    postUsers,
-    patchUsers,
-    deleteUsers
+    getUser,
+    updateUser,
+    createUser,
+    deleteUser
 }
